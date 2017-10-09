@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 
 import sys,ast
+movieTitleDict = {}
+
+def loadMovieNames():
+    with open('movies.csv') as f:
+        for row in csv.reader(f):
+            movieId = row[0]
+            movieTitle = row[1]
+
+            movieTitleDict[movieId] = movieTitle
 
 stripeDict = {}
 for line in sys.stdin:
@@ -13,38 +22,30 @@ for line in sys.stdin:
 
     stripeDict[movie] = {}
 
+
     for stripeMatch,sum in lists:
         try:
             sum = int(sum)
         except:
             continue
-        try:
-            stripeDict[(stripeMatch, movie)] = stripeDict[(stripeMatch, movie)]+sum
-        except:
-            try:
-                stripeDict[(movie,stripeMatch)] = stripeDict[(movie,stripeMatch)]+sum
-            except:
-                stripeDict[(movie,stripeMatch)] = sum
+        pair = (int(stripeMatch, int(movie)))
 
+        pair = sort(pair)
+
+        try:
+            stripeDict[pair] = stripeDict[pair]+sum
+        except:
+            stripeDict[pair] = sum
+            #try:
+            #    stripeDict[(movie,stripeMatch)] = stripeDict[(movie,stripeMatch)]+sum
+            #except:
+            #    stripeDict[(movie,stripeMatch)] = sum
+
+loadMovieNames()
 # need to modify so that only the top 20 frequent pairs are produced
+
+sorted_movies = sorted(pairCount.items(), key=operator.itemgetter(1),reverse=true)
+
 for stripe in stripeDict.keys():
     try:
-        print '%s\t%s\t%s' % (stripe[0], stripe[1], str(stripeDict[(stripe[0], stripe[1])]))
-    except:
-        print sys.exc_info()[0]
-"""
-    try:
-        count = int(count)
-    except:
-        continue
-
-    try: 
-        pairCount[(second,first)] = pairCount[(second,first)]+count
-    except:
-        try:
-            pairCount[(first,second)] = pairCount[(first,second)]+count
-        except:
-            pairCount[(first,second)] = count
-
-for pair in pairCount.keys():
-    print '%s\t%s\t%s' % (pair[0], pair[1], str(pairCount[(pair[0],pair[1])]))"""
+        print '%s\t%s\t%s' % (movieTitleDict[stripe[0]], movieTitleDict[stripe[1]], str(stripeDict[(stripe[0], stripe[1])]))
