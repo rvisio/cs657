@@ -51,10 +51,6 @@ out = pairs.map(lambda line: [line, '1']).countByKey()
 # Reduce and count movie pair appearances that exist in pairs
 #out.coalesce(1).saveAsTextFile('count_output_small')
 
-#TODO
-# load movie titles
-
-
 
 sorted_movies = sorted(out.items(), key=operator.itemgetter(1), reverse=True)
 
@@ -62,10 +58,3 @@ movieTitleDict = loadMovieNames()
 
 for i in range(0,20):
     print str(movieTitleDict[sorted_movies[i][0][0]]) + '\t' + str(movieTitleDict[sorted_movies[i][0][1]]) + '\t' + str(sorted_movies[i][1])
-
-
-
-
-#for key in out.keys():
-#    print str(key) + ' ' + str(out[key])
-
