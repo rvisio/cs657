@@ -1,33 +1,43 @@
+#!/usr/bin/env python
 from pyspark import SparkContext, SparkConf
-import itertools
-from collections import defaultdict
+import itertools,csv,operator
 
 conf = SparkConf().setMaster("local[*]").setAppName("spark_stripes")
 sc = SparkContext(conf=conf)
 
-epicDict = defaultdict(int)
-pairDict = {}
+def loadMovieNames():
+    movieDict={}
+    with open('/Users/robjarvis/cs657/hw2/ml-latest-small/movies.csv') as f:
+        for row in csv.reader(f):
+            movieId = row[0]
+            movieTitle = row[1]
+
+            movieDict[movieId] = movieTitle
+    return movieDict
+
 def stripeMap(data):
     prevMovie = None
     out = []
 
     data = data.split(',')
+    pairDict = {}
     pairList = []
-    for firstMovie in xrange(0,len(data)):
-        for secondMovie in xrange(firstMovie+1, len(data)):
-            pair = (int(data[firstMovie]), int(data[secondMovie]))
-            pair = sorted(pair)
-            pair = tuple(pair)
+    for firstMovie,secondMovie in itertools.combinations(data, 2):
+#    for firstMovie in xrange(0,len(data)):
+#        for secondMovie in xrange(firstMovie+1, len(data)):
+#        pair = (int(data[firstMovie]), int(data[secondMovie]))
+        pair = (int(firstMovie), int(secondMovie))
+        pair = sorted(pair)
+        pair = tuple(pair)
 
-            pairList.append(pair)
+        pairList.append(pair)
 
-        for pairKey in pairList:
-            try: 
-                pairDict[pairKey] = pairDict[pairKey] + 1
-            except:
-                pairDict[pairKey] = 1
-        return pairDict
-"""
+    for pairKey in pairList:
+        try: 
+            pairDict[pairKey] = pairDict[pairKey]
+        except:
+            pairDict[pairKey] = 1
+
     listToReturn = []
     for key in pairDict.keys():
         movie1 = key[0]
@@ -35,7 +45,7 @@ def stripeMap(data):
         outputList = []
         outputList.append("%s,%s" % (str(movie1), str(movie2)))
         listToReturn.append(outputList)
-    return listToReturn """
+    return listToReturn 
 
 
 """    if data:
@@ -61,13 +71,6 @@ def reduceByDict(theDict, somethingElse):
 
     return coDict
 
-    
-
-
-        
-
-
-
 #    for movie in data:
 #        print movie
 
@@ -85,43 +88,30 @@ removeLowRatings = cleanLines.filter(lambda l: float(l[2])>=4.0)
 #TODO
 need to map user id and a dictionary of movies and values that are counted for
 """
-def combinePairs(data):
-    goodDict =  defaultdict(int)
-    data = data.split(',')
 
-
-    return [v for v in itertools.combinations(data,2)]
-    """for v in itertools.combinations(data,2):
-        first = v[0]
-        second = v[1]
-
-        pair = (first,second)
-
-        goodDict[pair] = goodDict[pair]+1
-    return goodDict"""
 output = removeLowRatings.map(lambda x: [x[0],x[1]]).reduceByKey(lambda user,movie: user + ',' + movie).map(lambda x:x[1])
-pairs = output.flatMap(combinePairs)
-def add(a,b):
-    print str(a) + '  ' + str(b)
-#newPair = pairs.reduceByKey(lambda x: x+x)
-#pairs.combineByKey(lambda pair: add(pair[0],pair[1]))
-pairs.coalesce(1).saveAsTextFile('xyz')
-def printRecord(record):
-    for k,v in record.iteritems():
-        try:
-            epicDict[str(k)] = epicDict[str(k)]+1
-        except:
-            epicDict[str(k)] = 1
-    return epicDict
-#new = pairs.map(printRecord)
-
-# TODO
-# FIGURE OUT HOW TO MERGE THE FUCKING DICIONARIES
 
 #reduceByUserId = output.reduceByKey(lambda user, movie: user + ',' + movie)
 #reduceByUserId = output.reduceByKey(lambda user, movie: user + ',' + movie)
 #movies = reduceByUserId.map(lambda movie: movie[1])
+def combinations(row):
+    row = row.split(',')
+
+    return [(v) for v in itertools.combinations(row,2)]
+def stripeCombinations(row):
+    l = row[1]
+    k = row[0]
+#    return [(k,v) for v in itertools.combinations(l,2)]
+    return [(k,v) for v in l]
+
+stuff = output.flatMap(combinations).groupByKey().map(lambda x: (x[0],list(x[1])))
+test = stuff.flatMap(stripeCombinations)
+newStuff = test.map(lambda line: [line,'1']).countByKey()
+
+#newStuff.coalesce(1).saveAsTextFile('xyzzz')
+
 #pairs = output.flatMap(stripeMap)
+#pairs = output.flatMap(lambda x: [v for v in itertools.combinations(x,2)])
 #out = pairs.map(lambda line: line).countByKey()
 
 #stripeStuff = pairs.map(lambda line: str(line))
@@ -142,11 +132,12 @@ for key in newOutput.keys():
         finalDict[key] = finalDict[key]+1
     except:
         finalDict[key] = 1
-
 for key in finalDict.keys():
     if finalDict[key] > 1:
         print key
 print type(finalDict)"""
-#sorted_movies = sorted(out.items(), key=operator.itemgetter(1), reverse=True)
-#for i in range(0,20):
-#    print sorted_movies[i]
+movieDict = loadMovieNames()
+sorted_movies = sorted(newStuff.items(), key=operator.itemgetter(1), reverse=True)
+for i in range(0,20):
+    print str(movieDict[sorted_movies[i][0][0]]) + ',' + str(movieDict[sorted_movies[i][0][1]])+ str(sorted_movies[i][1])
+#pairs.coalesce(1).saveAsTextFile('xyzzz')

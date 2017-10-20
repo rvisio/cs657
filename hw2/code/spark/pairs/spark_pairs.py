@@ -26,7 +26,7 @@ def loadMovieNames():
     return movieDict
 
 #read in the dataset to lines rdd
-lines = sc.textFile('/Users/robjarvis/cs657/hw2/ml-latest-small/ratings.csv')
+lines = sc.textFile('/Users/robjarvis/cs657/hw2/ml-latest-small/ratings_small.csv')
 #lines = sc.textFile('/Users/robjarvis/cs657/hw2/ratings_small.csv')
 
 #for each line strip and split on the comma 
