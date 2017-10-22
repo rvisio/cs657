@@ -4,7 +4,7 @@ import sys,ast,csv,operator
 movieTitleDict = {}
 
 def loadMovieNames():
-    with open('/home/rjarvis4/ml-latest-small/movies.csv') as f:
+    with open('/Users/robjarvis/cs657/hw2/ml-latest-small/movies.csv') as f:
         for row in csv.reader(f):
             movieId = row[0]
             movieTitle = row[1]

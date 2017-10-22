@@ -35,8 +35,9 @@ for line in sys.stdin:
             for key,value in stripeDict.iteritems():
                 temp = [key,value]
                 dictList.append(temp)
-
-            print '%s\t%s' % (movie, str(dictList))
+            
+            if len(dictList) >0:
+                print '%s\t%s' % (movie, str(dictList))
     
         movieList = []
         listChecker = {}
@@ -49,3 +50,29 @@ for line in sys.stdin:
         #e = sys.exc_info()[0]
         #print e
         continue
+for movie in movieList:
+    stripeDict = {}
+    for pair in movieList:
+        #print movie
+        #print pair
+        newMovie = int(movie)
+        newPairThing = int(pair)
+        newPair = (int(newMovie), int(newPairThing))
+        newPair = sorted(newPair)
+        newPair = tuple(newPair)
+        #print newPair
+
+        if newPair not in listChecker:
+            listChecker[newPair] = 1
+            if movie != pair:
+                try:
+                    stripeDict[pair] = stripeDict[pair]+1
+                except:
+                    stripeDict[pair] = 1
+    dictList = []
+    for key,value in stripeDict.iteritems():
+        temp = [key,value]
+        dictList.append(temp)
+
+    if len(dictList) >0:
+        print '%s\t%s' % (movie, str(dictList))
