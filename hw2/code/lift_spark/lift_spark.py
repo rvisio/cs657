@@ -1,26 +1,5 @@
-#!/usr/bin/env python
 from pyspark import SparkContext, SparkConf
-import operator
-import itertools
-from collections import Counter
-import csv
-
-
-conf = SparkConf().setMaster("local[*]").setAppName("spark_stripes")
-sc = SparkContext(conf=conf)
-
-
-# Read lines from the input file
-lines = sc.textFile('/Users/robjarvis/cs657/hw2/ml-latest-small/ratings.csv')
-
-#for each line strip and split on the comma
-cleanLines = lines.map(lambda l: l.strip().split(','))
-
-# remove all ratings that are under 4.0
-removeLowRatings = cleanLines.filter(lambda l: float(l[2])>=4.0)
-
-
-output = removeLowRatings.map(lambda x: [x[0],x[1]]).reduceByKey(lambda user,movie: user + ',' + movie).map(lambda x:x[1])
+import itertools,csv,operator
 
 def loadMovieNames():
     movieDict={}
@@ -32,61 +11,90 @@ def loadMovieNames():
             movieDict[movieId] = movieTitle
     return movieDict
 
-def combinations(row):
+
+def stripes(row):
     row = row.split(',')
 
-    return [(v) for v in itertools.combinations(row,2)]
-def stripeCombinations(row):
-    l = row[1]
-    k = row[0]
+    stripeDict = {}
+    counter = 0
+    for movieA, movieB in itertools.combinations(row,2):
 
-    return [(k,v) for v in l]
+        try:
+            stripeDict[movieA][movieB] = stripeDict[movieA][movieB]+1
+        except:
+            try:
+                stripeDict[movieA][movieB] = 1
+            except:
+                stripeDict[movieA] = {movieB:1}
 
-stuff = output.flatMap(combinations).groupByKey().map(lambda x: (x[0],list(x[1])))
-test = stuff.flatMap(stripeCombinations)
-test.cache()
-#stuff = test.map(lambda line: [line,'1']).countByKey()
-#newOutput = test.map(Counter).reduce(lambda x,y: x+y)
-newOutput = test.flatMap(lambda x: x)
-tstThis = newOutput.map(lambda line: [line,'1']).countByKey()
-#tstThis.coalesce(1).saveAsTextFile('xyzzz')
+    return[(movie, stripe) for movie,stripe in stripeDict.items()]
 
-# tstThis contains a count of movieId and number of times it apepars in the pairs
-#print tstThis['260']
-totalMov = sum(tstThis.values())
-movieTitleDict = loadMovieNames()
-def removeLowCounts(row):
-    moviePair = row[0]
-   
-    # calculating for movie b given movie a
-    lift = 0.0
 
-    movieACount = int(row[1])
-    movieBCount = int(row[2])
+def mergeStripes(accumulator, stripe):
+    for key,value in stripe.iteritems():
+        try:
+            accumulator[key] = accumulator[key] + value
+        except:
 
-    totalMovieCount = float(row[3])
+            accumulator[key] = value
 
-    totalPairCount = movieACount + movieBCount
+    return accumulator
 
-    # calculate the probability of this movie pair
-#    movieAProb = float(totalPairCount)/float(row[3])
-    movieAProb = float(movieACount)/totalMovieCount
-    movieBProb = float(movieBCount)/totalMovieCount
+def calculateLift(data):
+    totalStripeMovie = sum(data[1].values())
 
-    pairProb = float(totalPairCount)/totalMovieCount
+    stripeLength = len(data[1].values())
 
-    # Calculate P(A|B) 
-    condProb = float(totalPairCount) / movieBProb  
+    for key,value in data[1].items():
+       data[1][key] = (float(value)/float(totalStripeMovie)) / (float(stripeLength)/users)
+       if data[1][key] < 1.6:
+           del data[1][key]
 
-    
-    if condProp > 0.8:
-        return [str(movieTitleDict[str(moviePair[0])]), str(movieTitleDict[str(moviePair[1])]), str(condProp)]
+    return data
 
-pairsAndCounts = test.map(lambda movie: [movie, tstThis[str(movie[0])], tstThis[str(movie[1])], totalMov])
-filterOnLowCP = pairsAndCounts.map(removeLowCounts).filter(lambda x: x is not None)
-#removeLow = filterOnLowCp 
-pairsAndCounts.coalesce(1).saveAsTextFile('xyz')
-#filterOnLowCP.coalesce(1).saveAsTextFile('xyz')
-#sorted_movies = sorted(tstThis.items(), key=operator.itemgetter(1), reverse=True)
-#for i in range(0,20):
-#    print pairsAndCounts[i]
+
+# Spark config stuff
+conf = SparkConf().setMaster("local[*]").setAppName("spark_stripes")
+sc = SparkContext(conf=conf)
+
+# Read lines from the input file
+lines = sc.textFile('/Users/robjarvis/cs657/hw2/ml-latest-small/ratings.csv')
+
+#for each line strip and split on the comma
+cleanLines = lines.map(lambda l: l.strip().split(','))
+
+# remove all ratings that are under 4.0
+removeLowRatings = cleanLines.filter(lambda l: float(l[2])>=4.0)
+
+# lsit of highly rated movies aggregated by user
+moviesByUser = removeLowRatings.map(lambda x: [x[0],x[1]])
+
+listMoviesByUser = moviesByUser.reduceByKey(lambda user,movie: user + ',' + movie).map(lambda x:x[1])
+
+users = moviesByUser.map(lambda x: x[0]).distinct().count()
+
+# convert to stripes/dicts
+movieStripes = listMoviesByUser.flatMap(stripes)
+
+#movieStripes.coalesce(1).saveAsTextFile('movieStripes')
+
+
+
+# merge counts together
+mergedStripeSums = movieStripes.reduceByKey(mergeStripes)
+#mergedStripeSums.coalesce(1).saveAsTextFile('mergedStripes')
+
+conditionalProbability = mergedStripeSums.map(calculateLift)
+
+removeEmpty = conditionalProbability.filter(lambda line: len(line[1])>0)
+
+
+mapValues = removeEmpty.flatMapValues(lambda x: [(k,v) for k,v in x.items()]).map(lambda x: ((x[0],x[1][0]),x[1][1]))
+movieDict = loadMovieNames()
+addTitles = mapValues.map(lambda line: [movieDict[line[0][0]], movieDict[line[0][1]], line[1]])
+
+addTitles.coalesce(1).saveAsTextFile('condProbOutputs')
+#processRdd = conditionalProbability.flatMapValues(lambda mergedDict: [(key,value) for key,value in mergedDict.iteritems()]).map(lambda x: ((x[0], x[1][0]),x[1][1]))
+#getVals = processRdd.collectAsMap()
+
+#processRdd.coalesce(1).saveAsTextFile('xyz')

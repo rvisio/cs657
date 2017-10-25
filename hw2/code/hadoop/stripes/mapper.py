@@ -50,6 +50,7 @@ for line in sys.stdin:
         #e = sys.exc_info()[0]
         #print e
         continue
+
 for movie in movieList:
     stripeDict = {}
     for pair in movieList:
