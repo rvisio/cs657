@@ -1,0 +1,45 @@
+rank is 5  numIterations is 5
+RMSE = 0.7157418921746184
+MSE = 0.5122942999009863
+MAP equal to 0.8141465033924458
+----------------
+rank is 5  numIterations is 10
+RMSE = 0.6920636073533657
+MSE = 0.47898155293713385
+MAP equal to 0.8141465033924458
+----------------
+rank is 5  numIterations is 15
+RMSE = 0.6907740978649204
+MSE = 0.47719412368564945
+MAP equal to 0.8141465033924457
+----------------
+rank is 10  numIterations is 5
+RMSE = 0.6292284594499973
+MSE = 0.3959635989366644
+MAP equal to 0.8141465033924457
+----------------
+rank is 10  numIterations is 10
+RMSE = 0.6052387522719995
+MSE = 0.36632364059463535
+MAP equal to 0.8141465033924458
+----------------
+rank is 10  numIterations is 15
+RMSE = 0.5951206633056362
+MSE = 0.3542233567889356
+MAP equal to 0.8141465033924458
+----------------
+rank is 15  numIterations is 5
+RMSE = 0.5774486928912675
+MSE = 0.33346313273852407
+MAP equal to 0.8141465033924458
+----------------
+rank is 15  numIterations is 10
+RMSE = 0.5506123408718956
+MSE = 0.30318398866688673
+MAP equal to 0.8141465033924457
+----------------
+rank is 15  numIterations is 15
+RMSE = 0.543582271022091
+MSE = 0.2955195668249123
+MAP equal to 0.8141465033924458
+----------------
